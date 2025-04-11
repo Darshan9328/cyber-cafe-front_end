@@ -14,7 +14,7 @@ document.querySelector("form").addEventListener("submit", async function (e) {
 
   try {
     const response = await fetch(
-      "http://localhost:5000/api/contact",
+      "https://cyber-cafe-backend-izxu.onrender.com/api/contact",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -44,7 +44,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     "#carouselExampleIndicators .carousel-indicators"
   );
 
-  const BACKEND_URL = "http://localhost:5000"; // your local Express server
+  const BACKEND_URL = "https://cyber-cafe-backend-izxu.onrender.com"; // your local Express server
 
   try {
     const res = await fetch(`${BACKEND_URL}/api/images`);
@@ -54,8 +54,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!data || data.length === 0) return;
 
     data.forEach((filename, index) => {
-      console.log("filename>>>", filename);
-      // Create indicator
       const indicator = document.createElement("button");
       indicator.type = "button";
       indicator.setAttribute("data-bs-target", "#carouselExampleIndicators");
