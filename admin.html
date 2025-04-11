@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Admin - Manage Carousel</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            padding: 30px;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 900px;
+            margin: auto;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        form {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        input[type="file"] {
+            padding: 5px;
+        }
+
+        button {
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #ccc;
+        }
+
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+
+        img {
+            max-height: 100px;
+            border-radius: 6px;
+        }
+
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        .pagination {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            margin: 0 5px;
+            padding: 6px 12px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .pagination button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Manage Images</h2>
+        <form id="uploadForm">
+            <input type="file" id="image" name="image" accept=".jpg,.jpeg,.png" required />
+            <button type="submit">Upload</button>
+            <!-- Add this somewhere in your HTML -->
+            <div id="uploadMessage" style="color: green; margin-top: 10px;"></div>
+
+        </form>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Preview</th>
+                    <th>Filename</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="imageList"></tbody>
+        </table>
+
+        <div class="pagination">
+            <button id="prevBtn">Previous</button>
+            <span id="pageInfo"></span>
+            <button id="nextBtn">Next</button>
+        </div>
+    </div>
+
+    <script>
+        const backend = "http://localhost:5000"; // or your deployed backend
+        let allImages = [];
+        let currentPage = 1;
+        const imagesPerPage = 5;
+
+        async function loadImages() {
+            const res = await fetch(`${backend}/api/images`);
+            allImages = await res.json();
+            document.getElementById("image").value = "";
+
+            displayImages();
+        }
+
+        function displayImages() {
+            const start = (currentPage - 1) * imagesPerPage;
+            const end = start + imagesPerPage;
+            const paginated = allImages.slice(start, end);
+
+            const table = document.getElementById("imageList");
+            table.innerHTML = paginated.map(img => {
+                const fileName = img.url.split("/").pop();
+                return `
+          <tr>
+            <td><img src="${backend}${img.url}" alt="Image" /></td>
+            <td>${fileName}</td>
+            <td><button onclick="deleteImage('${img.url}')">Delete</button></td>
+          </tr>
+        `;
+            }).join("");
+
+            updatePagination();
+        }
+
+        function updatePagination() {
+            const totalPages = Math.ceil(allImages.length / imagesPerPage);
+            document.getElementById("pageInfo").textContent = `Page ${currentPage} of ${totalPages}`;
+            document.getElementById("prevBtn").disabled = currentPage === 1;
+            document.getElementById("nextBtn").disabled = currentPage === totalPages;
+        }
+
+      document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append("image", document.getElementById("image").files[0]);
+
+            const response = await fetch(`${backend}/api/images`, {
+                method: "POST",
+                body: formData
+            });
+
+            if (response.ok) {
+                document.getElementById("uploadMessage").textContent = "Image uploaded successfully!";
+                currentPage = 1; // reset to first page after upload
+                loadImages();
+            } else {
+                document.getElementById("uploadMessage").textContent = "Failed to upload image.";
+                document.getElementById("uploadMessage").style.color = "red";
+            }
+
+            // Optionally hide the message after a few seconds
+            setTimeout(() => {
+                document.getElementById("uploadMessage").textContent = "";
+                document.getElementById("uploadMessage").style.color = "green"; // Reset to default
+            }, 3000);
+        });
+
+
+        async function deleteImage(url) {
+            await fetch(`${backend}/api/images`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ url })
+            });
+
+            // Stay on the same page unless the last item is deleted
+            const start = (currentPage - 1) * imagesPerPage;
+            if (start >= allImages.length - 1 && currentPage > 1) {
+                currentPage--;
+            }
+
+            loadImages();
+        }
+
+        document.getElementById("prevBtn").addEventListener("click", () => {
+            if (currentPage > 1) {
+                currentPage--;
+                displayImages();
+            }
+        });
+
+        document.getElementById("nextBtn").addEventListener("click", () => {
+            const totalPages = Math.ceil(allImages.length / imagesPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                displayImages();
+            }
+        });
+
+        loadImages();
+    </script>
+</body>
+
+</html>
